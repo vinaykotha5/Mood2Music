@@ -1,8 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-streamlit==1.39.0
 torch==2.1.0+cpu
 torchaudio==2.1.0+cpu
-audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
+audiocraft
 librosa==0.11.0
 matplotlib
 numpy
