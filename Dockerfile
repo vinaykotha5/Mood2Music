@@ -13,9 +13,9 @@ RUN pip install --no-cache-dir \
     torchaudio==2.1.0+cpu \
     --extra-index-url https://download.pytorch.org/whl/cpu
 
-# 2. Install audiocraft (uses the torch already installed above)
+# 2. Install audiocraft using direct git URL (not PEP 508 @ syntax)
 RUN pip install --no-cache-dir \
-    audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
+    git+https://github.com/facebookresearch/audiocraft.git
 
 # 3. Install remaining dependencies
 RUN pip install --no-cache-dir \
