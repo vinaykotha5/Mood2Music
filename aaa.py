@@ -36,6 +36,10 @@ from instrument_converter import (
     INSTRUMENT_PROMPTS,
     STYLE_MODIFIERS,
 )
+from music_db import (
+    save_track, get_all_tracks, delete_track,
+    search_similar_tracks, search_by_prompt, library_stats,
+)
 
 import platform as _platform
 
@@ -436,7 +440,18 @@ def tab_generate():
                 st.session_state.is_playing = True
                 prog.progress(100, text="Done!")
                 st.success(f"✅ Generated in {elapsed:.0f} seconds")
-                atexit.register(lambda p=out_path: os.remove(p) if os.path.exists(p) else None)
+                # ── Auto-save to ChromaDB library ──────────────────────────
+                try:
+                    save_track(
+                        tmp_mp3_path=out_path,
+                        wav_np=wav_np,
+                        sr=sr,
+                        prompt=final_prompt,
+                        metadata={"source": "generated", "instrument": ", ".join(instruments),
+                                  "style": ", ".join(genres), "duration": float(duration)},
+                    )
+                except Exception:
+                    pass  # don't block the user if DB save fails
                 st.rerun()
             except Exception as exc:
                 prog.empty()
@@ -589,7 +604,26 @@ def tab_converter():
                 st.session_state.conversion_prompt     = result
                 elapsed = analysis.get("generation_time", 0)
                 st.success(f"✅ Converted in {elapsed:.0f}s  |  Instrument: {instrument}  |  Style: {style_choice}")
-                atexit.register(lambda p=out_path: os.remove(p) if os.path.exists(p) else None)
+                # ── Auto-save to ChromaDB library ──────────────────────────
+                try:
+                    save_track(
+                        tmp_mp3_path=out_path,
+                        wav_np=wav_np,
+                        sr=sr,
+                        prompt=result,
+                        metadata={
+                            "source":     "converted",
+                            "instrument": instrument,
+                            "style":      style_choice,
+                            "key":        analysis.get("key", ""),
+                            "mode":       analysis.get("mode", ""),
+                            "tempo":      float(analysis.get("tempo", 0)),
+                            "energy":     analysis.get("energy", ""),
+                            "duration":   float(out_duration),
+                        },
+                    )
+                except Exception:
+                    pass
                 st.rerun()
             else:
                 prog.empty()
@@ -696,6 +730,85 @@ def tab_visualizer():
             )
 
 
+# ─── TAB 4 — Music Library ───────────────────────────────────────────────────
+
+def tab_library():
+    stats = library_stats()
+
+    # ── Stats bar ────────────────────────────────────────────────────────────
+    c1, c2, c3 = st.columns(3)
+    c1.metric("🎵 Total Tracks", stats["count"])
+    c2.metric("💾 Storage Used", f"{stats['size_mb']} MB")
+    c3.metric("📁 Library Path", "music_library/audio/")
+
+    st.markdown("---")
+
+    # ── Search bar ───────────────────────────────────────────────────────────
+    search_q = st.text_input("🔍 Search by prompt keyword", placeholder="e.g. piano, jazz, F major…", key="lib_search")
+
+    tracks = search_by_prompt(search_q) if search_q else get_all_tracks()
+
+    if not tracks:
+        st.markdown("""
+        <div style="text-align:center;padding:4rem 2rem;color:#475569;">
+          <div style="font-size:4rem;">📭</div>
+          <h3 style="color:#64748b;">Library is empty</h3>
+          <p>Generate or convert a tune — it will be saved here automatically.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+
+    # ── Track cards ──────────────────────────────────────────────────────────
+    for track in tracks:
+        fp = track.get("filepath", "")
+        if not fp or not os.path.exists(fp):
+            continue
+
+        source = track.get("source", "generated")
+        badge_color = "#7c3aed" if source == "generated" else "#0891b2"
+        badge_label = "🎵 Generated" if source == "generated" else "🎸 Converted"
+
+        with st.container():
+            st.markdown(f"""
+            <div class="glass-card" style="margin-bottom:0.8rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                <span style="background:{badge_color};color:white;padding:2px 10px;
+                             border-radius:999px;font-size:0.78rem;font-weight:600;">{badge_label}</span>
+                <span style="color:#64748b;font-size:0.78rem;">{track.get('date','')}</span>
+              </div>
+              <div class="prompt-box" style="margin-bottom:0.6rem;">{track.get('prompt','')[:200]}</div>
+              <div class="metric-row">
+                <span class="metric-chip">🎹 <span>{track.get('instrument','—')}</span></span>
+                <span class="metric-chip">🎨 <span>{track.get('style','—')}</span></span>
+                <span class="metric-chip">🎵 <span>{track.get('key','?')} {track.get('mode','')}</span></span>
+                <span class="metric-chip">🥁 <span>{int(track.get('tempo',0))} BPM</span></span>
+                <span class="metric-chip">⏱ <span>{float(track.get('duration',0)):.0f}s</span></span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col_play, col_dl, col_del = st.columns([4, 2, 1])
+            with col_play:
+                with open(fp, "rb") as f:
+                    audio_bytes = f.read()
+                st.audio(audio_bytes, format="audio/mp3")
+            with col_dl:
+                with open(fp, "rb") as f:
+                    st.download_button(
+                        "⬇️ Download",
+                        data=f.read(),
+                        file_name=f"track_{track['id'][:8]}.mp3",
+                        mime="audio/mpeg",
+                        key=f"dl_{track['id']}",
+                        use_container_width=True,
+                    )
+            with col_del:
+                if st.button("🗑️", key=f"del_{track['id']}", help="Delete this track"):
+                    if delete_track(track["id"]):
+                        st.success("Deleted")
+                        st.rerun()
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -716,7 +829,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs(["🎵 Generate Music", "🎸 Tune Converter", "📊 Visualizer"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🎵 Generate Music", "🎸 Tune Converter", "📊 Visualizer", "🗄️ Library"])
 
     with tab1:
         tab_generate()
@@ -724,6 +837,8 @@ def main():
         tab_converter()
     with tab3:
         tab_visualizer()
+    with tab4:
+        tab_library()
 
 
 if __name__ == "__main__":
