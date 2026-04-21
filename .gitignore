@@ -1,0 +1,13 @@
+.git/
+__pycache__/
+*.pyc
+*.pyo
+generated/
+*.mp3
+*.wav
+music_library/
+D:/hf_cache/
+Music-Generation-Using-Deep-Learning-master/
+*.h5
+*.mid
+*.mp4
