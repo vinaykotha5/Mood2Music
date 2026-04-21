@@ -29,10 +29,9 @@ RUN pip install --no-cache-dir \
     matplotlib \
     numpy
 
-COPY aaa.py app.py tensorflow_mock.py musicgen_wrapper.py \
+COPY aaa.py app.py tensorflow_mock.py _install_mocks.py musicgen_wrapper.py \
      instrument_converter.py music_db.py ui_components.py \
      requirements.txt packages.txt README.md ./
-COPY xformers/ ./xformers/
 
 RUN mkdir -p music_library/audio music_library/chroma
 
