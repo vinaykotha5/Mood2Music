@@ -3,8 +3,9 @@ title: AI Music Studio
 emoji: 🎵
 colorFrom: purple
 colorTo: blue
-sdk: docker
-app_port: 7860
+sdk: streamlit
+sdk_version: 1.39.0
+app_file: aaa.py
 pinned: false
 license: mit
 ---
