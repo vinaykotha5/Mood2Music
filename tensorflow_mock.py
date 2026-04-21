@@ -122,6 +122,10 @@ def _install_tf_stub() -> None:
         # MUST have __file__ so inspect.getfile doesn't raise TypeError
         mock.__file__ = __file__
         mock._IS_TB_STUB = True
+        # MUST have __spec__ so importlib.util.find_spec() doesn't crash
+        mock.__spec__ = importlib.machinery.ModuleSpec(
+            "tensorflow", loader=None, origin=__file__
+        )
         sys.modules["tensorflow"] = mock
 
     # ── Patch tensorboard's lazy tf proxy so it never tries to re-import ─────
