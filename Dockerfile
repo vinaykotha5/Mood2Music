@@ -31,6 +31,7 @@ RUN pip install --no-cache-dir \
 
 # 3. App dependencies
 RUN pip install --no-cache-dir \
+    av \
     streamlit==1.39.0 \
     librosa==0.11.0 \
     matplotlib \
