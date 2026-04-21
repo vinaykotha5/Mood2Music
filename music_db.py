@@ -36,7 +36,7 @@ AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─── ChromaDB client (persistent, local) ─────────────────────────────────────
 
-_client: chromadb.PersistentClient | None = None
+_client = None
 _collection = None
 
 
