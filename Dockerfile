@@ -2,26 +2,33 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps — only ffmpeg needed for audio processing
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
-# Install CPU-only PyTorch + audiocraft + app deps in a single pip call.
-# Pinning torch version in the same call prevents pip from pulling CUDA torch.
+# CPU-only PyTorch
 RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     "torch==2.1.0+cpu" \
-    "torchaudio==2.1.0+cpu" \
-    audiocraft \
+    "torchaudio==2.1.0+cpu"
+
+# audiocraft without its heavy optional deps (spacy, xformers)
+# Install only deps needed for MusicGen inference
+RUN pip install --no-cache-dir --no-deps audiocraft && \
+    pip install --no-cache-dir \
+    av julius einops flashy \
+    "transformers>=4.31.0" \
+    sentencepiece scipy \
+    num2words hydra-core \
+    huggingface_hub encodec
+
+# App deps (no tensorboard, no chromadb — saves ~400MB)
+RUN pip install --no-cache-dir \
     streamlit==1.39.0 \
     librosa==0.11.0 \
     matplotlib \
-    numpy \
-    tensorboard \
-    chromadb
+    numpy
 
-# Copy ONLY the app source files (not everything)
 COPY aaa.py app.py tensorflow_mock.py musicgen_wrapper.py \
      instrument_converter.py music_db.py ui_components.py \
      requirements.txt packages.txt README.md ./

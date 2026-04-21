@@ -23,8 +23,12 @@ from pathlib import Path
 
 import numpy as np
 import librosa
-import chromadb
-from chromadb.config import Settings
+try:
+    import chromadb
+    from chromadb.config import Settings
+    CHROMADB_AVAILABLE = True
+except ImportError:
+    CHROMADB_AVAILABLE = False
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +46,8 @@ _collection = None
 
 def _get_collection():
     global _client, _collection
+    if not CHROMADB_AVAILABLE:
+        return None
     if _collection is None:
         _client = chromadb.PersistentClient(path=str(DB_DIR))
         _collection = _client.get_or_create_collection(
@@ -110,12 +116,16 @@ def save_track(
     track_id : str   UUID of the saved track
     """
     col = _get_collection()
-
     track_id = str(uuid.uuid4())
 
-    # Copy MP3 to permanent storage
+    # Copy MP3 even without chromadb
     perm_path = AUDIO_DIR / f"{track_id}.mp3"
     shutil.copy2(tmp_mp3_path, perm_path)
+
+    if col is None:
+        return track_id
+
+
 
     # Build ChromaDB metadata (only str / int / float / bool allowed)
     now = datetime.now()
@@ -149,7 +159,7 @@ def save_track(
 def get_all_tracks() -> list[dict]:
     """Return all tracks sorted newest-first."""
     col = _get_collection()
-    if col.count() == 0:
+    if col is None or col.count() == 0:
         return []
     result = col.get(include=["metadatas", "documents"])
     tracks = []
@@ -165,6 +175,8 @@ def get_all_tracks() -> list[dict]:
 def delete_track(track_id: str) -> bool:
     """Delete a track from DB and remove its MP3 file."""
     col = _get_collection()
+    if col is None:
+        return False
     try:
         result = col.get(ids=[track_id], include=["metadatas"])
         if result["ids"]:
@@ -180,7 +192,7 @@ def delete_track(track_id: str) -> bool:
 def search_similar_tracks(wav_np: np.ndarray, sr: int, n: int = 5) -> list[dict]:
     """Find the N most similar tracks by audio feature similarity."""
     col = _get_collection()
-    if col.count() == 0:
+    if col is None or col.count() == 0:
         return []
     embedding = _extract_embedding(wav_np, sr)
     results = col.query(
@@ -210,7 +222,7 @@ def search_by_prompt(query: str, n: int = 10) -> list[dict]:
 def library_stats() -> dict:
     """Return summary stats for the library."""
     col = _get_collection()
-    count = col.count()
+    count = col.count() if col is not None else 0
     size_mb = 0.0
     try:
         for f in AUDIO_DIR.glob("*.mp3"):
