@@ -20,6 +20,7 @@ This eliminates the need to install these packages (saving ~500MB+):
 
 import sys
 import types
+import importlib.machinery
 
 
 class _StubObj:
@@ -50,6 +51,8 @@ def _make_mock_module(name: str) -> types.ModuleType:
     mod.__package__ = name.rsplit(".", 1)[0] if "." in name else name
     mod.__all__ = []
     mod.__version__ = "0.0.0"
+    # Proper __spec__ so importlib.util.find_spec() doesn't crash
+    mod.__spec__ = importlib.machinery.ModuleSpec(name, loader=None, origin=__file__)
 
     def _getattr(attr_name):
         return _StubObj()
