@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.git/
-.gitignore
-music_library/
-*.mp3
-*.wav
