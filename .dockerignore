@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+music_library/
+*.mp3
+*.wav
+*.h5
+*.mid
