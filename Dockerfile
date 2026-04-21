@@ -7,26 +7,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg git && \
     rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-
-# 1. CPU-only PyTorch first
+# Install ALL Python packages in one resolver pass.
+# torch==2.1.0+cpu is pinned here so pip never resolves to the 2.5GB CUDA build.
 RUN pip install --no-cache-dir \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
     torch==2.1.0+cpu \
     torchaudio==2.1.0+cpu \
-    --extra-index-url https://download.pytorch.org/whl/cpu
-
-# 2. Write a constraints file so pip won't upgrade/replace torch with CUDA
-#    then install audiocraft WITH all its deps (no --no-deps)
-RUN echo "torch==2.1.0+cpu" > /tmp/constraints.txt && \
-    echo "torchaudio==2.1.0+cpu" >> /tmp/constraints.txt && \
-    pip install --no-cache-dir \
-        --constraint /tmp/constraints.txt \
-        --extra-index-url https://download.pytorch.org/whl/cpu \
-        audiocraft
-
-# 3. App dependencies
-RUN pip install --no-cache-dir \
+    audiocraft \
     streamlit==1.39.0 \
     librosa==0.11.0 \
     matplotlib \
@@ -35,7 +22,7 @@ RUN pip install --no-cache-dir \
     chromadb \
     "packaging>=23.1,<25"
 
-# Copy app
+# Copy app files
 COPY . .
 
 RUN mkdir -p music_library/audio music_library/chroma
