@@ -72,14 +72,15 @@ _MOCKS = {
         "spacy.language", "spacy.lang", "spacy.lang.en",
         "spacy.cli", "spacy.util",
     ],
-    # xformers — transformer.py: `from xformers import ops`
+    # xformers — transformer.py: `from xformers import ops` / profiler / checkpoint
     "xformers": [
         "xformers", "xformers.ops",
+        "xformers.profiler", "xformers.checkpoint_fairinternal",
     ],
-    # demucs — multibanddiffusion.py imports demucs
+    # demucs — conditioners.py: `from demucs.apply/audio import ...`
     "demucs": [
         "demucs", "demucs.pretrained", "demucs.apply",
-        "demucs.hdemucs", "demucs.states",
+        "demucs.audio", "demucs.hdemucs", "demucs.states",
     ],
     # soundfile — data/audio.py: `import soundfile`
     "soundfile": [
@@ -97,9 +98,9 @@ _MOCKS = {
     "laion_clap": [
         "laion_clap", "laion_clap.clap_module",
     ],
-    # dora — used by training/exploration code
+    # dora — flashy/distrib.py & flashy/logging.py: `from dora.distrib import ...`
     "dora": [
-        "dora",
+        "dora", "dora.distrib", "dora.log",
     ],
 }
 
