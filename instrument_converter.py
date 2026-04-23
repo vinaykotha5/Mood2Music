@@ -4,9 +4,6 @@ instrument_converter.py
 Helper module for the Tune Converter tab.
 """
 
-# ── MUST be first: installs a TF stub so torch.utils.tensorboard doesn't crash
-import tensorflow_mock  # noqa: F401
-
 import os
 import io
 import time

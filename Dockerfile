@@ -3,10 +3,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --no-install-recommends ffmpeg git && \
     rm -rf /var/lib/apt/lists/*
 
-# CPU-only PyTorch (updated to 2.6.0 to match requirements.txt)
+# CPU-only PyTorch
 RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     "torch==2.6.0+cpu" \
@@ -18,23 +18,18 @@ RUN pip install --no-cache-dir "numpy<2"
 # torchmetrics (required by audiocraft)
 RUN pip install --no-cache-dir torchmetrics
 
-# audiocraft without its heavy optional deps (spacy, xformers)
-# Install only deps needed for MusicGen inference
-RUN pip install --no-cache-dir --no-deps audiocraft && \
-    pip install --no-cache-dir \
-    av julius einops flashy \
-    "transformers>=4.31.0" \
-    sentencepiece scipy \
-    num2words hydra-core \
-    huggingface_hub encodec
+# Install audiocraft with all dependencies
+RUN pip install --no-cache-dir audiocraft
 
-# App deps (no tensorboard, no chromadb — saves ~400MB)
+# App dependencies
 RUN pip install --no-cache-dir \
     streamlit==1.39.0 \
     librosa==0.11.0 \
-    matplotlib
+    matplotlib \
+    tensorboard \
+    chromadb
 
-COPY aaa.py app.py tensorflow_mock.py _install_mocks.py musicgen_wrapper.py \
+COPY aaa.py app.py musicgen_wrapper.py \
      instrument_converter.py music_db.py ui_components.py \
      requirements.txt packages.txt README.md ./
 

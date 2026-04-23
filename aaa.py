@@ -9,11 +9,6 @@ Multi-tab Streamlit app:
 Optimised for Intel integrated graphics (CPU-only inference).
 """
 
-# ── MUST be first: installs a TF stub so torch.utils.tensorboard doesn't crash
-import tensorflow_mock  # noqa: F401
-# ── Pre-register mocks for heavy audiocraft deps (spacy, xformers, demucs, etc.)
-import _install_mocks   # noqa: F401
-
 import os
 import io
 import time
