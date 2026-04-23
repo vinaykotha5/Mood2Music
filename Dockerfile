@@ -2,9 +2,20 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install system dependencies including build tools for PyAV
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg git && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    git \
+    pkg-config \
+    libavformat-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libavfilter-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # CPU-only PyTorch
 RUN pip install --no-cache-dir \
