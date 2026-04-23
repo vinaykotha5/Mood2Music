@@ -1,6 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.6.0+cpu
 torchaudio==2.6.0+cpu
+torchmetrics
 audiocraft
 streamlit==1.39.0
 librosa==0.11.0
