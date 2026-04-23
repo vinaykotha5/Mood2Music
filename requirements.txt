@@ -1,5 +1,5 @@
-torch
-torchaudio
+torch==2.5.1
+torchaudio==2.5.1
 numpy<2
 torchmetrics
 av>=12.0.0

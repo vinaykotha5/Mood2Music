@@ -6,7 +6,7 @@ colorTo: blue
 sdk: streamlit
 sdk_version: 1.39.0
 app_file: aaa.py
-python_version: 3.11
+python_version: "3.11"
 pinned: false
 license: mit
 ---
