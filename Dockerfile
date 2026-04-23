@@ -2,12 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including build tools for PyAV
+# Install system dependencies including build tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
     git \
     pkg-config \
+    gcc \
+    g++ \
+    make \
     libavformat-dev \
     libavcodec-dev \
     libavdevice-dev \
@@ -15,6 +18,7 @@ RUN apt-get update && \
     libswscale-dev \
     libswresample-dev \
     libavfilter-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # CPU-only PyTorch
@@ -28,6 +32,9 @@ RUN pip install --no-cache-dir "numpy<2"
 
 # torchmetrics (required by audiocraft)
 RUN pip install --no-cache-dir torchmetrics
+
+# Install av (PyAV) separately first
+RUN pip install --no-cache-dir av
 
 # Install audiocraft with all dependencies
 RUN pip install --no-cache-dir audiocraft
