@@ -23,16 +23,13 @@ import types
 import importlib.machinery
 
 
-class _StubClass(type):
-    """Metaclass for creating stub classes that can be used in isinstance checks."""
-    def __instancecheck__(cls, instance):
-        return False
-    
-    def __subclasscheck__(cls, subclass):
-        return False
+# Create a proper base class that can be used in isinstance checks
+class _MockBase:
+    """Base class for all mock objects - can be used in isinstance checks."""
+    pass
 
 
-class _StubObj(metaclass=_StubClass):
+class _StubObj(_MockBase):
     """Universal stub that absorbs any attribute access or call."""
     def __init__(self, *args, **kwargs):
         pass
@@ -41,10 +38,14 @@ class _StubObj(metaclass=_StubClass):
         return _StubObj()
     
     def __getattr__(self, name):
-        # Return a class for common type-like attributes
-        if name in ('Tensor', 'Variable', 'Module', 'Parameter', 'Model', 
-                    'Layer', 'Sequential', 'Embedding', 'Linear'):
-            return type(name, (_StubObj,), {})
+        # Return a proper class for type-like attributes
+        if name.endswith('Type') or name[0].isupper():
+            # Create a new class that inherits from _MockBase
+            return type(name, (_MockBase,), {
+                '__module__': 'mock',
+                '__init__': lambda self, *a, **kw: None,
+                '__call__': lambda self, *a, **kw: _StubObj(),
+            })
         return _StubObj()
     
     def __bool__(self):
@@ -77,12 +78,28 @@ def _make_mock_module(name: str) -> types.ModuleType:
     # Proper __spec__ so importlib.util.find_spec() doesn't crash
     mod.__spec__ = importlib.machinery.ModuleSpec(name, loader=None, origin=__file__)
 
+    # Pre-populate common type names as actual classes
+    _common_types = [
+        'Tensor', 'Variable', 'Module', 'Parameter', 'Model',
+        'Layer', 'Sequential', 'Embedding', 'Linear', 'Doc',
+        'Span', 'Token', 'Language', 'Vocab', 'Tokenizer',
+        'Config', 'PreTrainedModel', 'PretrainedConfig'
+    ]
+    
+    for type_name in _common_types:
+        # Create actual classes that can be used in isinstance checks
+        setattr(mod, type_name, type(type_name, (_MockBase,), {
+            '__module__': name,
+            '__init__': lambda self, *a, **kw: None,
+        }))
+
     def _getattr(attr_name):
-        # Return proper classes for common type names
-        if attr_name in ('Tensor', 'Variable', 'Module', 'Parameter', 'Model',
-                         'Layer', 'Sequential', 'Embedding', 'Linear', 'Doc',
-                         'Span', 'Token', 'Language', 'Vocab'):
-            return type(attr_name, (_StubObj,), {'__module__': name})
+        # Return proper classes for type-like names
+        if attr_name[0].isupper() or attr_name.endswith('Type'):
+            return type(attr_name, (_MockBase,), {
+                '__module__': name,
+                '__init__': lambda self, *a, **kw: None,
+            })
         return _StubObj()
 
     mod.__getattr__ = _getattr

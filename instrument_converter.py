@@ -199,7 +199,15 @@ def convert_tune(
 
         start = time.time()
         with torch.no_grad():
-            wav_tensor = model.generate([prompt])          # shape (1, 1, T)
+            try:
+                wav_tensor = model.generate([prompt])          # shape (1, 1, T)
+            except TypeError as te:
+                # If isinstance error, try to provide more context
+                if "isinstance() arg 2" in str(te):
+                    import traceback
+                    tb = traceback.format_exc()
+                    return None, None, None, None, f"Type checking error in audiocraft. This may be due to mock dependencies. Full error: {tb}"
+                raise
         elapsed = time.time() - start
 
         wav_cpu = wav_tensor[0].cpu()                     # shape (1, T)
@@ -215,4 +223,6 @@ def convert_tune(
         return base + ".mp3", wav_np, model.sample_rate, analysis, prompt
 
     except Exception as exc:
-        return None, None, None, None, f"Generation error: {exc}"
+        import traceback
+        tb = traceback.format_exc()
+        return None, None, None, None, f"Generation error: {exc}\n\nTraceback:\n{tb}"
