@@ -56,13 +56,21 @@ def _install_tf_stub() -> None:
         # Add tensorflow.Tensor if missing (isinstance checks in torch TB utils)
         if not hasattr(_stub, "Tensor"):
             class _FakeTensor:
-                pass
+                """Fake TensorFlow Tensor class for isinstance checks."""
+                def __init__(self, *args, **kwargs):
+                    pass
+                def __repr__(self):
+                    return "<FakeTensor>"
             _stub.Tensor = _FakeTensor
 
         # Add tensorflow.Variable if missing (accessed during model.generate)
         if not hasattr(_stub, "Variable"):
             class _FakeVariable:
-                pass
+                """Fake TensorFlow Variable class for isinstance checks."""
+                def __init__(self, *args, **kwargs):
+                    pass
+                def __repr__(self):
+                    return "<FakeVariable>"
             _stub.Variable = _FakeVariable
 
         # Patch tf.io.gfile with any missing methods that torch TB needs

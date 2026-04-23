@@ -23,22 +23,45 @@ import types
 import importlib.machinery
 
 
-class _StubObj:
+class _StubClass(type):
+    """Metaclass for creating stub classes that can be used in isinstance checks."""
+    def __instancecheck__(cls, instance):
+        return False
+    
+    def __subclasscheck__(cls, subclass):
+        return False
+
+
+class _StubObj(metaclass=_StubClass):
     """Universal stub that absorbs any attribute access or call."""
+    def __init__(self, *args, **kwargs):
+        pass
+    
     def __call__(self, *a, **kw):
         return _StubObj()
+    
     def __getattr__(self, name):
+        # Return a class for common type-like attributes
+        if name in ('Tensor', 'Variable', 'Module', 'Parameter', 'Model', 
+                    'Layer', 'Sequential', 'Embedding', 'Linear'):
+            return type(name, (_StubObj,), {})
         return _StubObj()
+    
     def __bool__(self):
         return False
+    
     def __iter__(self):
         return iter([])
+    
     def __len__(self):
         return 0
+    
     def __enter__(self):
         return self
+    
     def __exit__(self, *a):
         return False
+    
     def __repr__(self):
         return "<MockStub>"
 
@@ -55,6 +78,11 @@ def _make_mock_module(name: str) -> types.ModuleType:
     mod.__spec__ = importlib.machinery.ModuleSpec(name, loader=None, origin=__file__)
 
     def _getattr(attr_name):
+        # Return proper classes for common type names
+        if attr_name in ('Tensor', 'Variable', 'Module', 'Parameter', 'Model',
+                         'Layer', 'Sequential', 'Embedding', 'Linear', 'Doc',
+                         'Span', 'Token', 'Language', 'Vocab'):
+            return type(attr_name, (_StubObj,), {'__module__': name})
         return _StubObj()
 
     mod.__getattr__ = _getattr
