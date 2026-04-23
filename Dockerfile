@@ -6,11 +6,17 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
-# CPU-only PyTorch
+# CPU-only PyTorch (updated to 2.6.0 to match requirements.txt)
 RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cpu \
-    "torch==2.1.0+cpu" \
-    "torchaudio==2.1.0+cpu"
+    "torch==2.6.0+cpu" \
+    "torchaudio==2.6.0+cpu"
+
+# NumPy 1.x for compatibility
+RUN pip install --no-cache-dir "numpy<2"
+
+# torchmetrics (required by audiocraft)
+RUN pip install --no-cache-dir torchmetrics
 
 # audiocraft without its heavy optional deps (spacy, xformers)
 # Install only deps needed for MusicGen inference
@@ -26,8 +32,7 @@ RUN pip install --no-cache-dir --no-deps audiocraft && \
 RUN pip install --no-cache-dir \
     streamlit==1.39.0 \
     librosa==0.11.0 \
-    matplotlib \
-    numpy
+    matplotlib
 
 COPY aaa.py app.py tensorflow_mock.py _install_mocks.py musicgen_wrapper.py \
      instrument_converter.py music_db.py ui_components.py \
